@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parquet 行组裁剪实验台</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">PQ</span>
+    <div>
+      <h1>Parquet 行组裁剪实验台</h1>
+      <p class="subtitle">统计信息驱动的安全裁剪 · 候选行组预览 · 真实读取计量 · 变体对比</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button id="btn-theme" class="btn btn-ghost" type="button">切换主题</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- 左侧：文件与筛选 -->
+  <section class="panel panel-left">
+    <div class="panel-section">
+      <h2>1. 选择数据文件</h2>
+      <div class="file-actions">
+        <label class="btn btn-primary btn-file">
+          上传 .parquet
+          <input id="file-input" type="file" accept=".parquet" hidden>
+        </label>
+        <button id="btn-refresh-samples" class="btn btn-ghost" type="button">刷新样本</button>
+      </div>
+      <div id="sample-list" class="sample-list" aria-label="内置样本文件"></div>
+      <div id="file-list" class="file-list" aria-label="已注册文件"></div>
+    </div>
+
+    <div class="panel-section" id="filter-section" hidden>
+      <h2>2. 构造筛选条件</h2>
+      <p class="hint" id="filter-hint"></p>
+      <div id="filter-builder"></div>
+      <div class="filter-toolbar">
+        <button id="btn-add-leaf" class="btn btn-ghost btn-sm" type="button">+ 条件</button>
+        <button id="btn-clear-filter" class="btn btn-ghost btn-sm" type="button">清空</button>
+      </div>
+      <div id="filter-errors" class="filter-errors" role="alert"></div>
+      <div class="run-actions">
+        <button id="btn-plan" class="btn btn-primary" type="button">预览裁剪计划</button>
+        <button id="btn-run-prune" class="btn btn-accent" type="button">执行裁剪查询</button>
+        <button id="btn-run-full" class="btn btn-ghost" type="button">完整扫描对照</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右侧：元数据、计划、结果、对比 -->
+  <section class="panel panel-right">
+    <div id="empty-state" class="empty-state">
+      <h2>从左侧上传 Parquet 或选择内置样本开始</h2>
+      <p>页面将展示行组、行数、列类型与 min/max/NULL 统计；筛选后可预览哪些行组能被安全排除。</p>
+    </div>
+
+    <div id="metadata-view" hidden>
+      <div class="panel-section">
+        <h2 id="md-title">文件元数据</h2>
+        <div id="md-summary" class="stat-tiles"></div>
+        <h3>列与类型</h3>
+        <div class="table-wrap">
+          <table id="column-table" class="data-table">
+            <thead><tr><th>列名</th><th>Arrow 类型</th><th>类型族</th><th>可空</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>行组与列块统计</h3>
+        <div id="rg-container" class="rg-container"></div>
+      </div>
+    </div>
+
+    <div id="plan-view" hidden>
+      <div class="panel-section">
+        <h2>裁剪计划预览（未读取数据，仅依据 footer 统计）</h2>
+        <div id="plan-summary" class="stat-tiles"></div>
+        <div id="plan-decisions" class="plan-decisions"></div>
+      </div>
+    </div>
+
+    <div id="result-view" hidden>
+      <div class="panel-section">
+        <h2>查询执行结果与真实读取计量</h2>
+        <div id="result-summary" class="stat-tiles"></div>
+        <div class="meter-note" id="meter-note"></div>
+        <h3>结果预览（前 100 行）</h3>
+        <div class="table-wrap">
+          <table id="result-table" class="data-table"></table>
+        </div>
+      </div>
+    </div>
+
+    <div id="compare-view" hidden>
+      <div class="panel-section">
+        <h2>同数据 · 不同排序 / 行组大小 对比</h2>
+        <div class="compare-controls">
+          <div id="compare-pickers" class="compare-pickers"></div>
+          <button id="btn-run-compare" class="btn btn-accent" type="button">对所选文件执行对比</button>
+        </div>
+        <div id="compare-banner"></div>
+        <div id="compare-chart" class="compare-chart" aria-label="读取量对比条形图"></div>
+        <div class="table-wrap">
+          <table id="compare-table" class="data-table">
+            <thead><tr>
+              <th>文件</th><th>模式</th><th>候选行组</th><th>排除行组</th><th>读取行组</th>
+              <th>计划读取 (B)</th><th>实测数据读取 (B)</th><th>实测含 footer (B)</th>
+              <th>结果行数</th><th>结果摘要</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
